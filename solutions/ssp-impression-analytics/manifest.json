@@ -1,0 +1,16 @@
+{
+  "name": "ssp-impression-analytics",
+  "display_name": "SSP Impression Analytics",
+  "version": "1.0.0",
+  "industry": "Advertising & MarTech",
+  "description": "SSP impression analytics with identity resolution, campaign management, and Cortex Agent for natural language exploration.",
+  "database": "SF_SOLUTIONS",
+  "schemas": ["SSP_IMPRESSION_ANALYTICS"],
+  "role": "ACCOUNTADMIN",
+  "requires_warehouse": true,
+  "requires_marketplace": [],
+  "install_scripts": ["scripts/setup.sql", "scripts/data.sql"],
+  "teardown_scripts": ["scripts/teardown.sql"],
+  "features": ["Semantic View", "Cortex Agent", "Snowflake CoWork", "Identity Resolution"],
+  "notes": "Agent requires Snowflake CoWork enabled. Semantic model YAML must be uploaded via PUT before creating the semantic view."
+}

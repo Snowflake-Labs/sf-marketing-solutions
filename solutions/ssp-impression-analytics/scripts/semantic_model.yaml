@@ -1,0 +1,334 @@
+name: ssp_analytics
+description: >
+  SSP impression analytics covering auction performance, campaign health,
+  DSP win rates, revenue metrics, and audience quality with identity
+  resolution scores. Use this to answer questions about impression revenue,
+  viewability, brand safety, campaign fill rates, and audience segments.
+
+tables:
+  - name: impressions
+    description: >
+      Individual SSP impression log records. Each row is one auction won
+      by a DSP, with revenue, viewability, and brand safety metrics.
+    base_table:
+      database: SF_SOLUTIONS
+      schema: SSP_IMPRESSION_ANALYTICS
+      table: SSP_IMPRESSION_LOG
+
+    time_dimensions:
+      - name: impression_time
+        synonyms: ["time", "timestamp", "date", "when"]
+        description: "When the impression was served"
+        expr: IMPRESSION_TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+
+    dimensions:
+      - name: ad_format
+        synonyms: ["format", "creative format"]
+        description: "Ad creative format type"
+        expr: AD_FORMAT
+        data_type: VARCHAR
+        is_enum: true
+        sample_values: ["Display Banner", "Video Pre-roll", "Video Mid-roll", "Native", "CTV Full-screen"]
+      - name: ad_position
+        synonyms: ["position", "slot"]
+        description: "Ad position on page/screen"
+        expr: AD_POSITION
+        data_type: VARCHAR
+        is_enum: true
+        sample_values: ["Above Fold", "Below Fold", "In-Stream", "Full Screen"]
+      - name: inventory_type
+        synonyms: ["inventory", "channel"]
+        description: "Type of ad inventory"
+        expr: INVENTORY_TYPE
+        data_type: VARCHAR
+        is_enum: true
+        sample_values: ["CTV", "Display", "Video", "Mobile"]
+      - name: winning_dsp
+        synonyms: ["DSP", "buyer", "demand partner"]
+        description: "DSP that won the auction"
+        expr: WINNING_DSP
+        data_type: VARCHAR
+        sample_values: ["The Trade Desk", "Amazon DSP", "Google DV360", "Xandr", "MediaMath"]
+      - name: campaign_id
+        synonyms: ["campaign"]
+        description: "Campaign identifier"
+        expr: CAMPAIGN_ID
+        data_type: VARCHAR
+
+    facts:
+      - name: winning_bid_price
+        synonyms: ["bid price", "clearing price"]
+        description: "Price the winning DSP paid"
+        expr: WINNING_BID_PRICE
+        data_type: NUMBER
+      - name: floor_price
+        synonyms: ["floor", "minimum bid"]
+        description: "Minimum bid floor set by the publisher"
+        expr: FLOOR_PRICE
+        data_type: NUMBER
+      - name: gross_revenue
+        synonyms: ["revenue", "gross"]
+        description: "Total gross revenue from the impression"
+        expr: GROSS_REVENUE
+        data_type: NUMBER
+      - name: net_revenue
+        synonyms: ["net", "publisher revenue"]
+        description: "Revenue after fees"
+        expr: NET_REVENUE
+        data_type: NUMBER
+      - name: tech_fee
+        synonyms: ["fee", "platform fee"]
+        description: "Technology platform fee"
+        expr: TECH_FEE
+        data_type: NUMBER
+      - name: viewability_score
+        synonyms: ["viewability", "in-view"]
+        description: "MRC viewability score (0-1)"
+        expr: VIEWABILITY_SCORE
+        data_type: NUMBER
+      - name: brand_safety_score
+        synonyms: ["brand safety", "safety score"]
+        description: "Brand safety score (0-1, higher is safer)"
+        expr: BRAND_SAFETY_SCORE
+        data_type: NUMBER
+      - name: completion_rate
+        synonyms: ["VCR", "video completion"]
+        description: "Video completion rate (0-1)"
+        expr: COMPLETION_RATE
+        data_type: NUMBER
+      - name: auction_participants
+        synonyms: ["bidders", "participants"]
+        description: "Number of DSPs that participated in the auction"
+        expr: AUCTION_PARTICIPANTS
+        data_type: NUMBER
+
+    metrics:
+      - name: total_gross_revenue
+        synonyms: ["total revenue", "revenue"]
+        description: "Sum of gross revenue"
+        expr: SUM(GROSS_REVENUE)
+      - name: total_net_revenue
+        synonyms: ["net revenue", "publisher payout"]
+        description: "Sum of net revenue (after fees)"
+        expr: SUM(NET_REVENUE)
+      - name: total_impressions
+        synonyms: ["impression count", "volume"]
+        description: "Total number of impressions"
+        expr: COUNT(*)
+      - name: avg_bid_price
+        synonyms: ["average bid", "eCPM"]
+        description: "Average winning bid price"
+        expr: AVG(WINNING_BID_PRICE)
+      - name: avg_viewability
+        synonyms: ["viewability rate"]
+        description: "Average viewability score"
+        expr: AVG(VIEWABILITY_SCORE)
+      - name: avg_brand_safety
+        synonyms: ["brand safety rate"]
+        description: "Average brand safety score"
+        expr: AVG(BRAND_SAFETY_SCORE)
+      - name: avg_completion_rate
+        synonyms: ["VCR"]
+        description: "Average video completion rate"
+        expr: AVG(COMPLETION_RATE)
+      - name: revenue_per_impression
+        synonyms: ["RPI", "yield"]
+        description: "Average revenue per impression"
+        expr: SUM(GROSS_REVENUE) / NULLIF(COUNT(*), 0)
+      - name: take_rate
+        synonyms: ["platform take", "fee rate"]
+        description: "Percentage of gross kept as tech fee"
+        expr: SUM(TECH_FEE) / NULLIF(SUM(GROSS_REVENUE), 0)
+
+    filters:
+      - name: last_7_days
+        synonyms: ["this week", "recent"]
+        description: "Last 7 days"
+        expr: "IMPRESSION_TIMESTAMP >= DATEADD('day', -7, CURRENT_TIMESTAMP())"
+      - name: ctv_only
+        synonyms: ["CTV", "connected TV"]
+        description: "CTV inventory only"
+        expr: "INVENTORY_TYPE = 'CTV'"
+      - name: video_only
+        synonyms: ["video"]
+        description: "Video formats only"
+        expr: "AD_FORMAT LIKE '%Video%' OR AD_FORMAT = 'CTV Full-screen'"
+
+  - name: campaigns
+    description: >
+      SSP campaign configuration with targeting, goals, and deal types.
+    base_table:
+      database: SF_SOLUTIONS
+      schema: SSP_IMPRESSION_ANALYTICS
+      table: SSP_CAMPAIGN
+
+    time_dimensions:
+      - name: campaign_start
+        synonyms: ["start date"]
+        description: "Campaign start date"
+        expr: CAMPAIGN_START_DATE
+        data_type: DATE
+      - name: campaign_end
+        synonyms: ["end date"]
+        description: "Campaign end date"
+        expr: CAMPAIGN_END_DATE
+        data_type: DATE
+
+    dimensions:
+      - name: campaign_name
+        synonyms: ["campaign", "name"]
+        description: "Campaign display name"
+        expr: CAMPAIGN_NAME
+        data_type: VARCHAR
+      - name: campaign_status
+        synonyms: ["status"]
+        description: "Active or Paused"
+        expr: CAMPAIGN_STATUS
+        data_type: VARCHAR
+        is_enum: true
+        sample_values: ["Active", "Paused"]
+      - name: campaign_type
+        synonyms: ["type", "deal model"]
+        description: "Programmatic deal type"
+        expr: CAMPAIGN_TYPE
+        data_type: VARCHAR
+        is_enum: true
+        sample_values: ["Programmatic Guaranteed", "Private Marketplace", "Open Auction", "Preferred Deal"]
+      - name: campaign_inventory_type
+        synonyms: ["inventory"]
+        description: "Inventory type targeted"
+        expr: INVENTORY_TYPE
+        data_type: VARCHAR
+
+    facts:
+      - name: campaign_floor_price
+        synonyms: ["floor"]
+        description: "Campaign floor price"
+        expr: FLOOR_PRICE
+        data_type: NUMBER
+      - name: impression_goal
+        synonyms: ["goal", "target impressions"]
+        description: "Target impression count"
+        expr: IMPRESSION_GOAL
+        data_type: NUMBER
+      - name: revenue_goal
+        synonyms: ["revenue target"]
+        description: "Target revenue"
+        expr: REVENUE_GOAL
+        data_type: NUMBER
+
+    metrics:
+      - name: total_campaigns
+        synonyms: ["campaign count"]
+        description: "Number of campaigns"
+        expr: COUNT(*)
+      - name: avg_floor_price
+        synonyms: ["average floor"]
+        description: "Average floor price across campaigns"
+        expr: AVG(FLOOR_PRICE)
+
+  - name: customers
+    description: >
+      Unified customer profiles with identity resolution scores from
+      two IDR providers and SSP engagement metrics.
+    base_table:
+      database: SF_SOLUTIONS
+      schema: SSP_IMPRESSION_ANALYTICS
+      table: CUSTOMER_PROFILE
+
+    dimensions:
+      - name: customer_segment
+        synonyms: ["segment", "audience"]
+        description: "Customer audience segment"
+        expr: CUSTOMER_SEGMENT
+        data_type: VARCHAR
+        sample_values: ["High Value CTV Viewer", "Mobile-First Shopper", "Premium Content Consumer", "Cross-Device Active"]
+      - name: gender
+        synonyms: ["sex"]
+        description: "Customer gender"
+        expr: GENDER
+        data_type: VARCHAR
+        is_enum: true
+        sample_values: ["Male", "Female"]
+      - name: state
+        synonyms: ["location", "geo"]
+        description: "US state"
+        expr: STATE
+        data_type: VARCHAR
+
+    facts:
+      - name: age
+        description: "Customer age"
+        expr: AGE
+        data_type: NUMBER
+      - name: idr_a_engagement
+        synonyms: ["IDR A engagement", "engagement score"]
+        description: "Digital engagement score from IDR Provider A"
+        expr: IDR_A_DIGITAL_ENGAGEMENT_SCORE
+        data_type: FLOAT
+      - name: idr_b_affinity
+        synonyms: ["IDR B affinity", "brand affinity"]
+        description: "Brand affinity score from IDR Provider B"
+        expr: IDR_B_BRAND_AFFINITY_SCORE
+        data_type: FLOAT
+      - name: lifetime_value
+        synonyms: ["LTV", "customer value"]
+        description: "Customer lifetime value"
+        expr: LIFETIME_VALUE
+        data_type: FLOAT
+      - name: customer_impressions
+        synonyms: ["impressions"]
+        description: "Total impressions served to this customer"
+        expr: TOTAL_IMPRESSIONS
+        data_type: NUMBER
+
+    metrics:
+      - name: avg_lifetime_value
+        synonyms: ["avg LTV"]
+        description: "Average customer lifetime value"
+        expr: AVG(LIFETIME_VALUE)
+      - name: avg_engagement_score
+        synonyms: ["engagement"]
+        description: "Average IDR-A digital engagement"
+        expr: AVG(IDR_A_DIGITAL_ENGAGEMENT_SCORE)
+      - name: total_customer_count
+        synonyms: ["audience size"]
+        description: "Number of customers"
+        expr: COUNT(*)
+
+verified_queries:
+  - name: revenue_by_dsp
+    question: "Which DSPs generate the most revenue?"
+    use_as_onboarding_question: true
+    sql: |
+      SELECT winning_dsp, total_gross_revenue, total_impressions, avg_bid_price
+      FROM ssp_analytics
+      GROUP BY winning_dsp
+      ORDER BY total_gross_revenue DESC
+
+  - name: revenue_by_inventory
+    question: "How is revenue distributed across inventory types?"
+    use_as_onboarding_question: true
+    sql: |
+      SELECT inventory_type, total_gross_revenue, total_impressions, avg_viewability
+      FROM ssp_analytics
+      GROUP BY inventory_type
+      ORDER BY total_gross_revenue DESC
+
+  - name: viewability_by_format
+    question: "What is the viewability rate by ad format?"
+    use_as_onboarding_question: true
+    sql: |
+      SELECT ad_format, avg_viewability, avg_brand_safety, total_impressions
+      FROM ssp_analytics
+      GROUP BY ad_format
+      ORDER BY avg_viewability DESC
+
+  - name: high_value_segments
+    question: "Which customer segments have the highest lifetime value?"
+    sql: |
+      SELECT customer_segment, avg_lifetime_value, avg_engagement_score, total_customer_count
+      FROM ssp_analytics
+      GROUP BY customer_segment
+      ORDER BY avg_lifetime_value DESC
