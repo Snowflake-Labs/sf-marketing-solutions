@@ -1,5 +1,11 @@
 # OpenRTB Analyst Agent
 
+> **Note:** This solution uses entirely synthetic data. All advertiser and
+> publisher names are fictional. DSP/SSP platform names (e.g., Google AdX,
+> Magnite, PubMatic) are industry-standard exchange identifiers retained for
+> realism — no real campaign data, user data, or proprietary information is
+> included.
+
 Programmatic advertising analytics powered by a Snowflake Intelligence Agent.
 Ask natural language questions about bid performance, auction dynamics, and
 campaign efficiency using OpenRTB 2.6 data.
