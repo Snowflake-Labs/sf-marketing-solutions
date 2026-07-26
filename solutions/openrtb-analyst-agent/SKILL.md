@@ -50,14 +50,33 @@ Find the solution directory containing `manifest.json` with
 ### Step 3: Execute setup.sql
 
 Run the full `scripts/setup.sql` as a single `snowflake_sql_execute` call.
-This creates: schema, base tables, 10 dynamic tables, semantic view, and agent.
+This creates: schema, base tables, 10 dynamic tables, semantic model stage, and agent.
 
 ### Step 4: Execute data.sql
 
 Run `scripts/data.sql` with `timeout_seconds: 600` (data generation may take
 a few minutes due to GENERATOR + JOINs).
 
-### Step 5: Verify
+### Step 5: Upload Semantic Model and Create Semantic View
+
+Upload the YAML file to the stage, then create the semantic view:
+
+```sql
+USE SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
+PUT file://semantic_model.yaml @SEMANTIC_MODEL_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
+```
+
+Then call:
+
+```sql
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+    'SF_SOLUTIONS.OPENRTB_ANALYTICS',
+    SNOWFLAKE.CORTEX.READ_FILE('@SF_SOLUTIONS.OPENRTB_ANALYTICS.SEMANTIC_MODEL_STAGE/semantic_model.yaml')
+);
+GRANT SELECT ON SEMANTIC VIEW SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS TO ROLE PUBLIC;
+```
+
+### Step 6: Verify
 
 ```sql
 SELECT COUNT(*) AS bid_rows FROM SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_BIDS;
@@ -66,7 +85,7 @@ SHOW DYNAMIC TABLES IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 SHOW AGENTS IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 ```
 
-### Step 6: Show Results
+### Step 7: Show Results
 
 Display:
 
