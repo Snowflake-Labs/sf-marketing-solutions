@@ -3,7 +3,7 @@
   "display_name": "OpenRTB Analyst Agent",
   "version": "1.0.0",
   "industry": "Advertising & MarTech",
-  "description": "Programmatic advertising analytics agent using OpenRTB 2.6 bid/auction data with Cortex Analyst and Snowflake Intelligence.",
+  "description": "Programmatic advertising analytics agent using OpenRTB 2.6 bid/auction data with Cortex Analyst and Snowflake CoWork.",
   "database": "SF_SOLUTIONS",
   "schemas": ["OPENRTB_ANALYTICS"],
   "role": "ACCOUNTADMIN",
@@ -11,6 +11,6 @@
   "requires_marketplace": [],
   "install_scripts": ["scripts/setup.sql", "scripts/data.sql"],
   "teardown_scripts": ["scripts/teardown.sql"],
-  "features": ["Dynamic Tables", "Semantic View", "Cortex Agent", "Snowflake Intelligence"],
-  "notes": "Dynamic Tables require TARGET_LAG; initial refresh runs on install. Agent requires Snowflake Intelligence enabled on the account."
+  "features": ["Dynamic Tables", "Semantic View", "Cortex Agent", "Snowflake CoWork"],
+  "notes": "Dynamic Tables require TARGET_LAG; initial refresh runs on install. Agent requires Snowflake CoWork enabled on the account."
 }

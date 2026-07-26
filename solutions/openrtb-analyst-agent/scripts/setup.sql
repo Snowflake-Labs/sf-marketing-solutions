@@ -5,7 +5,7 @@
 -- Schemas:  OPENRTB_ANALYTICS
 -- =============================================================================
 -- Programmatic advertising analytics with Cortex Agent.
--- Demonstrates: Dynamic Tables, Semantic Views, Snowflake Intelligence Agent.
+-- Demonstrates: Dynamic Tables, Semantic Views, Snowflake CoWork Agent.
 -- =============================================================================
 
 USE ROLE ACCOUNTADMIN;
@@ -407,7 +407,7 @@ CREATE STAGE IF NOT EXISTS SEMANTIC_MODEL_STAGE
 --   GRANT SELECT ON SEMANTIC VIEW SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS TO ROLE PUBLIC;
 
 -- =============================================================================
--- Cortex Agent: Snowflake Intelligence
+-- Cortex Agent: Snowflake CoWork
 -- =============================================================================
 
 CREATE OR REPLACE AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST

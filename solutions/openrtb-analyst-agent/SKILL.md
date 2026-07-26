@@ -3,7 +3,7 @@ name: openrtb-analyst-agent
 description: >
   Install or teardown the OpenRTB Analyst Agent solution.
   Creates programmatic advertising analytics with Dynamic Tables,
-  Semantic View, and a Snowflake Intelligence Agent.
+  Semantic View, and a Snowflake CoWork Agent.
 tools:
   - Read
   - Glob

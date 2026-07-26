@@ -6,7 +6,7 @@
 > realism — no real campaign data, user data, or proprietary information is
 > included.
 
-Programmatic advertising analytics powered by a Snowflake Intelligence Agent.
+Programmatic advertising analytics powered by a Snowflake CoWork Agent.
 Ask natural language questions about bid performance, auction dynamics, and
 campaign efficiency using OpenRTB 2.6 data.
 
@@ -14,7 +14,7 @@ campaign efficiency using OpenRTB 2.6 data.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Snowflake Intelligence (Cortex Agent)                               │
+│  Snowflake CoWork (Cortex Agent)                               │
 │  ┌────────────────────────────────────────────────────────────────┐  │
 │  │  OPENRTB_ANALYST Agent                                         │  │
 │  │    → Cortex Analyst (text-to-SQL via Semantic View)            │  │
@@ -57,7 +57,7 @@ campaign efficiency using OpenRTB 2.6 data.
 |---------|-------|
 | Dynamic Tables | Hourly aggregation with `TARGET_LAG = '1 hour'` |
 | Semantic View | Cortex Analyst text-to-SQL interface |
-| Cortex Agent | Snowflake Intelligence natural language agent |
+| Cortex Agent | Snowflake CoWork natural language agent |
 | GENERATOR() | Synthetic data generation (pure SQL) |
 
 ## Data Model
@@ -69,7 +69,7 @@ are industry-standard exchange identifiers retained for realism.
 ## Prerequisites
 
 - Snowflake account with ACCOUNTADMIN access
-- Snowflake Intelligence enabled (for the Agent)
+- Snowflake CoWork enabled (for the Agent)
 - LARGE warehouse available
 
 ## Quick Start
