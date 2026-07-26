@@ -10,7 +10,7 @@ End-to-end solution accelerators for the Marketing, AdTech & MarTech industry ve
 
 | # | Solution | Industry | Directory | Key Snowflake Features | Status |
 |---|----------|----------|-----------|----------------------|--------|
-<!-- Add solutions here -->
+| 1 | [OpenRTB Analyst Agent](solutions/openrtb-analyst-agent/) | Advertising & MarTech | `solutions/openrtb-analyst-agent` | Dynamic Tables, Semantic View, Cortex Agent, Snowflake CoWork | Available |
 
 ---
 

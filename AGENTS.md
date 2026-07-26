@@ -335,6 +335,7 @@ Reference when creating new solutions to avoid schema name conflicts and to foll
 
 | Solution | Industry | Database | Schemas | Key Features |
 |----------|----------|----------|---------|--------------|
+| openrtb-analyst-agent | Advertising & MarTech | SF_SOLUTIONS | OPENRTB_ANALYTICS | Dynamic Tables, Semantic View, Cortex Agent |
 
 Notes:
 - All solutions use `SF_SOLUTIONS` database.
