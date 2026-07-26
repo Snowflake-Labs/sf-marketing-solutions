@@ -52,31 +52,34 @@ Find the solution directory containing `manifest.json` with
 Run the full `scripts/setup.sql` as a single `snowflake_sql_execute` call.
 This creates: schema, base tables, 10 dynamic tables, semantic model stage, and agent.
 
-### Step 4: Execute data.sql
+### Step 4: Execute data.sql + Upload Semantic Model (PARALLEL)
 
-Run `scripts/data.sql` with `timeout_seconds: 600` (data generation may take
-a few minutes due to GENERATOR + JOINs).
+These two steps are independent — execute them in parallel using subagents:
 
-### Step 5: Upload Semantic Model and Create Semantic View
+```text
+Subagent A: "Insert demo data"
+  - Run scripts/data.sql with timeout_seconds: 600
+  - This populates OPENRTB_BIDS (50K rows) and OPENRTB_AUCTIONS (20K rows)
 
-Upload the YAML file to the stage, then create the semantic view:
-
-```sql
-USE SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
-PUT file://semantic_model.yaml @SEMANTIC_MODEL_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
+Subagent B: "Upload semantic model and create semantic view"
+  - USE SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
+  - PUT file://semantic_model.yaml @SEMANTIC_MODEL_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
+  - CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+        'SF_SOLUTIONS.OPENRTB_ANALYTICS',
+        SNOWFLAKE.CORTEX.READ_FILE('@SF_SOLUTIONS.OPENRTB_ANALYTICS.SEMANTIC_MODEL_STAGE/semantic_model.yaml')
+    );
+  - GRANT SELECT ON SEMANTIC VIEW SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS TO ROLE PUBLIC;
 ```
 
-Then call:
+Wait for both subagents to complete before proceeding.
 
-```sql
-CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
-    'SF_SOLUTIONS.OPENRTB_ANALYTICS',
-    SNOWFLAKE.CORTEX.READ_FILE('@SF_SOLUTIONS.OPENRTB_ANALYTICS.SEMANTIC_MODEL_STAGE/semantic_model.yaml')
-);
-GRANT SELECT ON SEMANTIC VIEW SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS TO ROLE PUBLIC;
-```
+**Why parallel:** data.sql inserts into base tables; semantic view reads from
+dynamic tables (which are empty until base tables have data AND refresh).
+However, the semantic view *creation* does not require data — it only needs the
+dynamic table DDL to exist (already created in Step 3). So both can run safely
+in parallel.
 
-### Step 6: Verify
+### Step 5: Verify
 
 ```sql
 SELECT COUNT(*) AS bid_rows FROM SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_BIDS;
@@ -85,7 +88,7 @@ SHOW DYNAMIC TABLES IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 SHOW AGENTS IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 ```
 
-### Step 7: Show Results
+### Step 6: Show Results
 
 Display:
 
