@@ -1,0 +1,4 @@
+[sqruff]
+dialect = snowflake
+exclude_rules = LT02, LT05
+max_line_length = 120
