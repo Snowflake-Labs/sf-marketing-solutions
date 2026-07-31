@@ -72,7 +72,66 @@ Subagent B: "Upload semantic model and create semantic view"
 
 Wait for both subagents to complete before proceeding.
 
-### Step 5: Verify
+### Step 5: Create Agent (AFTER Semantic View confirmed)
+
+First verify the semantic view was created successfully:
+
+```sql
+SHOW SEMANTIC VIEWS IN SCHEMA SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS;
+```
+
+If `SSP_ANALYTICS` appears in the results, proceed. If not, re-run Step 4B before continuing.
+
+Then create the agent and publish to CoWork:
+
+```sql
+CREATE OR REPLACE AGENT SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS.SSP_ANALYST
+COMMENT = 'SSP impression analytics agent for auction, campaign, and audience data'
+PROFILE = '{"display_name":"SSP Impression Analyst"}'
+FROM SPECIFICATION
+$$
+models:
+  orchestration: "auto"
+
+instructions:
+  response: |
+    You are an expert SSP (Supply-Side Platform) analytics specialist.
+    You help publishers and ad operations teams understand their impression
+    data, auction performance, campaign fill rates, and audience quality.
+
+    When answering questions:
+    - Provide specific revenue figures and percentages
+    - Compare DSP performance (win rates, bid prices)
+    - Analyze campaign health (fill rates, viewability, brand safety)
+    - Identify high-value audience segments using IDR scores
+    - Use industry terminology (floor price, eCPM, fill rate, viewability)
+
+tools:
+  - tool_spec:
+      type: "cortex_analyst_text_to_sql"
+      name: "query_ssp_data"
+
+tool_resources:
+  query_ssp_data:
+    semantic_view: "SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS.SSP_ANALYTICS"
+    execution_environment:
+      type: "warehouse"
+      warehouse: "SF_SOLUTIONS_WH"
+$$;
+
+GRANT USAGE ON AGENT SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS.SSP_ANALYST
+    TO ROLE PUBLIC;
+
+CREATE DATABASE IF NOT EXISTS SNOWFLAKE_INTELLIGENCE;
+GRANT USAGE ON DATABASE SNOWFLAKE_INTELLIGENCE TO ROLE PUBLIC;
+CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_INTELLIGENCE.AGENTS;
+GRANT USAGE ON SCHEMA SNOWFLAKE_INTELLIGENCE.AGENTS TO ROLE PUBLIC;
+
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+    ADD AGENT SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS.SSP_ANALYST;
+```
+
+### Step 6: Verify
 
 ```sql
 SELECT COUNT(*) AS impressions FROM SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS.SSP_IMPRESSION_LOG;
@@ -81,7 +140,7 @@ SELECT COUNT(*) AS customers FROM SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS.CUSTOMER
 SHOW AGENTS IN SCHEMA SF_SOLUTIONS.SSP_IMPRESSION_ANALYTICS;
 ```
 
-### Step 6: Show Results
+### Step 7: Show Results
 
 Display:
 

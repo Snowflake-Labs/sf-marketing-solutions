@@ -50,7 +50,7 @@ Find the solution directory containing `manifest.json` with
 ### Step 3: Execute setup.sql
 
 Run the full `scripts/setup.sql` as a single `snowflake_sql_execute` call.
-This creates: schema, base tables, 10 dynamic tables, semantic model stage, and agent.
+This creates: schema, base tables, 10 dynamic tables, and semantic model stage.
 
 ### Step 4: Execute data.sql + Upload Semantic Model (PARALLEL)
 
@@ -79,7 +79,63 @@ However, the semantic view *creation* does not require data — it only needs th
 dynamic table DDL to exist (already created in Step 3). So both can run safely
 in parallel.
 
-### Step 5: Verify
+### Step 5: Create Agent (AFTER Semantic View confirmed)
+
+First verify the semantic view was created successfully:
+
+```sql
+SHOW SEMANTIC VIEWS IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
+```
+
+If `OPENRTB_ANALYTICS` appears, proceed. If not, re-run Step 4B before continuing.
+
+Then create the agent and publish to CoWork:
+
+```sql
+CREATE OR REPLACE AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST
+COMMENT = 'Programmatic advertising analytics agent for OpenRTB bid and auction data'
+PROFILE = '{"display_name":"OpenRTB Analyst"}'
+FROM SPECIFICATION
+$$
+models:
+  orchestration: "auto"
+
+instructions:
+  response: |
+    You are an expert programmatic advertising analyst with deep knowledge of
+    OpenRTB 2.6, DSP/SSP mechanics, and ad tech metrics. You help users
+    understand their bid performance, auction dynamics, and campaign efficiency.
+
+    When answering questions:
+    - Always provide specific numbers and percentages
+    - Compare metrics across dimensions when relevant
+    - Flag anomalies or notable patterns
+    - Suggest optimization actions when data reveals opportunities
+    - Use industry terminology correctly (eCPM, CTR, win rate, bid floor, etc.)
+
+tools:
+  - tool_spec:
+      type: "cortex_analyst_text_to_sql"
+      name: "query_openrtb_data"
+
+tool_resources:
+  query_openrtb_data:
+    semantic_view: "SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS"
+    execution_environment:
+      type: "warehouse"
+      warehouse: "SF_SOLUTIONS_WH"
+$$;
+
+GRANT USAGE ON AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST
+    TO ROLE PUBLIC;
+
+CREATE SNOWFLAKE INTELLIGENCE IF NOT EXISTS SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
+
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+    ADD AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST;
+```
+
+### Step 6: Verify
 
 ```sql
 SELECT COUNT(*) AS bid_rows FROM SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_BIDS;
@@ -88,7 +144,7 @@ SHOW DYNAMIC TABLES IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 SHOW AGENTS IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 ```
 
-### Step 6: Show Results
+### Step 7: Show Results
 
 Display:
 

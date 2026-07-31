@@ -394,67 +394,8 @@ CREATE STAGE IF NOT EXISTS SEMANTIC_MODEL_STAGE
     DIRECTORY = (ENABLE = TRUE)
     COMMENT = 'Stage for Cortex Analyst semantic model YAML';
 
--- NOTE: The semantic_model.yaml must be PUT to this stage before running the
--- block below. The installer handles the PUT:
---   PUT file://semantic_model.yaml @SEMANTIC_MODEL_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE
+-- NOTE: Semantic view creation and agent setup are handled by the SKILL.md installer:
+--   Step 4B: PUT semantic_model.yaml to stage, then CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML
+--   Step 5:  Verify semantic view exists, then CREATE AGENT + CoWork publish
 
-CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
-    'SF_SOLUTIONS.OPENRTB_ANALYTICS',
-    SNOWFLAKE.CORTEX.READ_FILE('@SF_SOLUTIONS.OPENRTB_ANALYTICS.SEMANTIC_MODEL_STAGE/semantic_model.yaml')
-);
-
-GRANT SELECT ON SEMANTIC VIEW SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS TO ROLE PUBLIC;
-
--- =============================================================================
--- Cortex Agent: Snowflake CoWork
--- =============================================================================
-
-CREATE OR REPLACE AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST
-COMMENT = 'Programmatic advertising analytics agent for OpenRTB bid and auction data'
-PROFILE = '{"display_name":"OpenRTB Analyst"}'
-FROM SPECIFICATION
-$$
-models:
-  orchestration: "auto"
-
-instructions:
-  response: |
-    You are an expert programmatic advertising analyst with deep knowledge of
-    OpenRTB 2.6, DSP/SSP mechanics, and ad tech metrics. You help users
-    understand their bid performance, auction dynamics, and campaign efficiency.
-
-    When answering questions:
-    - Always provide specific numbers and percentages
-    - Compare metrics across dimensions when relevant
-    - Flag anomalies or notable patterns
-    - Suggest optimization actions when data reveals opportunities
-    - Use industry terminology correctly (eCPM, CTR, win rate, bid floor, etc.)
-
-tools:
-  - tool_spec:
-      type: "cortex_analyst_text_to_sql"
-      name: "query_openrtb_data"
-
-tool_resources:
-  query_openrtb_data:
-    semantic_view: "SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS"
-    execution_environment:
-      type: "warehouse"
-      warehouse: "SF_SOLUTIONS_WH"
-$$;
-
-GRANT USAGE ON AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST
-    TO ROLE PUBLIC;
-
--- Publish to Snowflake CoWork (makes the agent visible in ai.snowflake.com)
--- Create the default SI object if it does not exist (new/clean accounts).
-CREATE SNOWFLAKE INTELLIGENCE IF NOT EXISTS SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
-
-ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
-    ADD AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST;
-
--- Output URLs
-SELECT 'https://app.snowflake.com/' || LOWER(CURRENT_ORGANIZATION_NAME()) || '/'
-    || LOWER(CURRENT_ACCOUNT_NAME())
-    || '/#/agents/database/SF_SOLUTIONS/schema/OPENRTB_ANALYTICS/agent/OPENRTB_ANALYST/details'
-    AS AGENT_URL;
+SELECT 'Schema SF_SOLUTIONS.OPENRTB_ANALYTICS created successfully' AS STATUS;
