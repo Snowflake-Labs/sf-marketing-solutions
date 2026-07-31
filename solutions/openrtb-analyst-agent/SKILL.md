@@ -36,60 +36,63 @@ Database:   SF_SOLUTIONS
 Schema:     OPENRTB_ANALYTICS
 Objects:    2 base tables, 10 dynamic tables, 1 semantic view, 1 agent
 Data:       ~50K synthetic bid rows + ~20K auction rows
-Features:   Dynamic Tables, Semantic View, Cortex Agent
+Features:   Dynamic Tables, Semantic View, Cortex Agent, Snowflake CoWork
 ```
 
 Ask user to confirm before proceeding.
 
-### Step 2: Locate Solution Files
+### Step 2: Locate Solution Directory
 
 Find the solution directory containing `manifest.json` with
-`"name": "openrtb-analyst-agent"`. Read `scripts/setup.sql` and
-`scripts/data.sql`.
+`"name": "openrtb-analyst-agent"`. Record the **absolute path** to the
+solution directory (e.g. `/path/to/solutions/openrtb-analyst-agent`).
+
+The key files are:
+- `<solution_dir>/scripts/setup.sql`
+- `<solution_dir>/scripts/data.sql`
+- `<solution_dir>/scripts/semantic_model.yaml`
 
 ### Step 3: Execute setup.sql
 
 Run the full `scripts/setup.sql` as a single `snowflake_sql_execute` call.
 This creates: schema, base tables, 10 dynamic tables, and semantic model stage.
 
-### Step 4: Execute data.sql + Upload Semantic Model (PARALLEL)
+### Step 4: Insert Demo Data
 
-These two steps are independent — execute them in parallel using subagents:
+Run `scripts/data.sql` with `timeout_seconds: 600`.
+This populates OPENRTB_BIDS (~50K rows) and OPENRTB_AUCTIONS (~20K rows).
 
-```text
-Subagent A: "Insert demo data"
-  - Run scripts/data.sql with timeout_seconds: 600
-  - This populates OPENRTB_BIDS (50K rows) and OPENRTB_AUCTIONS (20K rows)
+### Step 5: Upload Semantic Model and Create Semantic View
 
-Subagent B: "Upload semantic model and create semantic view"
-  - USE SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
-  - PUT file://semantic_model.yaml @SEMANTIC_MODEL_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
-  - CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
-        'SF_SOLUTIONS.OPENRTB_ANALYTICS',
-        SNOWFLAKE.CORTEX.READ_FILE('@SF_SOLUTIONS.OPENRTB_ANALYTICS.SEMANTIC_MODEL_STAGE/semantic_model.yaml')
-    );
-  - GRANT SELECT ON SEMANTIC VIEW SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS TO ROLE PUBLIC;
-```
-
-Wait for both subagents to complete before proceeding.
-
-**Why parallel:** data.sql inserts into base tables; semantic view reads from
-dynamic tables (which are empty until base tables have data AND refresh).
-However, the semantic view *creation* does not require data — it only needs the
-dynamic table DDL to exist (already created in Step 3). So both can run safely
-in parallel.
-
-### Step 5: Create Agent (AFTER Semantic View confirmed)
-
-First verify the semantic view was created successfully:
+Use `snowflake_sql_execute` with the PUT command. The PUT must use the
+**absolute path** to `semantic_model.yaml` and the **relative stage path**
+(USE SCHEMA first, then `@STAGE_NAME/`).
 
 ```sql
-SHOW SEMANTIC VIEWS IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
+USE SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
+PUT file://<solution_dir>/scripts/semantic_model.yaml @SEMANTIC_MODEL_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
 ```
 
-If `OPENRTB_ANALYTICS` appears, proceed. If not, re-run Step 4B before continuing.
+Replace `<solution_dir>` with the absolute path found in Step 2.
 
-Then create the agent and publish to CoWork:
+Then create the semantic view:
+
+```sql
+USE SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+    'SF_SOLUTIONS.OPENRTB_ANALYTICS',
+    SNOWFLAKE.CORTEX.READ_FILE('@SF_SOLUTIONS.OPENRTB_ANALYTICS.SEMANTIC_MODEL_STAGE/semantic_model.yaml')
+);
+```
+
+Then grant access:
+
+```sql
+GRANT SELECT ON SEMANTIC VIEW SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYTICS
+    TO ROLE PUBLIC;
+```
+
+### Step 6: Create Agent and Publish to CoWork
 
 ```sql
 CREATE OR REPLACE AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST
@@ -128,23 +131,28 @@ $$;
 
 GRANT USAGE ON AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST
     TO ROLE PUBLIC;
+```
 
+Then publish to Snowflake CoWork:
+
+```sql
 CREATE SNOWFLAKE INTELLIGENCE IF NOT EXISTS SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
 
 ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
     ADD AGENT SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_ANALYST;
 ```
 
-### Step 6: Verify
+### Step 7: Verify
 
 ```sql
 SELECT COUNT(*) AS bid_rows FROM SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_BIDS;
 SELECT COUNT(*) AS auction_rows FROM SF_SOLUTIONS.OPENRTB_ANALYTICS.OPENRTB_AUCTIONS;
 SHOW DYNAMIC TABLES IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
+SHOW SEMANTIC VIEWS IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 SHOW AGENTS IN SCHEMA SF_SOLUTIONS.OPENRTB_ANALYTICS;
 ```
 
-### Step 7: Show Results
+### Step 8: Show Results
 
 Display:
 
