@@ -1,5 +1,7 @@
 # Snowflake MAM Industry Solutions
 
+Disclaimer: This application is not part of the Snowflake Service and is governed by the terms in LICENSE, unless expressly agreed to in writing. You use this application at your own risk, and Snowflake has no obligation to support your use of this application. [Learn more](./LEGAL.md)
+
 **MAM: Marketing, AdTech & MarTech**
 
 End-to-end solution accelerators for the Marketing, AdTech & MarTech industry vertical, built on Snowflake and Cortex Code, showcasing Cortex AI, Snowflake ML, and the modern data platform.
