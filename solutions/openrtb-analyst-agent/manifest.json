@@ -9,8 +9,8 @@
   "role": "ACCOUNTADMIN",
   "requires_warehouse": true,
   "requires_marketplace": [],
-  "install_scripts": ["scripts/setup.sql", "scripts/data.sql"],
+  "install_scripts": ["scripts/setup.sql", "scripts/data.sql", "scripts/agent.sql"],
   "teardown_scripts": ["scripts/teardown.sql"],
   "features": ["Dynamic Tables", "Semantic View", "Cortex Agent", "Snowflake CoWork"],
-  "notes": "Dynamic Tables require TARGET_LAG; initial refresh runs on install. Agent requires Snowflake CoWork enabled on the account."
+  "notes": "Installer uploads semantic_model.yaml to a stage, creates the semantic view, then creates the agent. All steps handled automatically by the SKILL.md installer."
 }

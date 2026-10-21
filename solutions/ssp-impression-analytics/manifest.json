@@ -9,8 +9,8 @@
   "role": "ACCOUNTADMIN",
   "requires_warehouse": true,
   "requires_marketplace": [],
-  "install_scripts": ["scripts/setup.sql", "scripts/data.sql"],
+  "install_scripts": ["scripts/setup.sql", "scripts/data.sql", "scripts/semantic_view.sql", "scripts/agent.sql"],
   "teardown_scripts": ["scripts/teardown.sql"],
   "features": ["Semantic View", "Cortex Agent", "Snowflake CoWork", "Identity Resolution"],
-  "notes": "Agent requires Snowflake CoWork enabled. Semantic model YAML must be uploaded via PUT before creating the semantic view."
+  "notes": "Requires Snowflake CoWork enabled. The installer uploads semantic_model.yaml to a stage, creates the semantic view, then creates the agent. All steps are handled automatically."
 }
